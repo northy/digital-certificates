@@ -55,6 +55,12 @@ fire::optional<std::string> associated_cert_key = fire::arg({"Associated certifi
 
         out_cert.close();
 
+        std::ofstream out_key(output_path+".sk", std::fstream::binary);
+
+        write_sk(out_key, rsa);
+
+        out_key.close();
+
         RSA_free(associated);
         RSA_free(rsa);
     }

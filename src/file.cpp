@@ -174,7 +174,7 @@ RSA *valid_cert(std::ifstream &stream, std::string &name, std::string &email, RS
 
     unsigned char *sig = NULL;
     unsigned int sig_len;
-    sig = (unsigned char*)malloc(RSA_size(rsa));
+    sig = (unsigned char*)malloc(RSA_size(pk));
     assert (sig!=NULL);
 
     stream.read((char*)&c, sizeof(c));
@@ -193,4 +193,41 @@ RSA *valid_cert(std::ifstream &stream, std::string &name, std::string &email, RS
     free(sig);
 
     return rsa;
+}
+
+void write_sig(std::ofstream &stream, unsigned char *md, RSA *sk) {
+    unsigned char *sig = NULL;
+    unsigned int sig_len;
+    sig = (unsigned char*)malloc(RSA_size(sk));
+    assert (sig!=NULL);
+
+    assert (RSA_sign(NID_sha256, md, sizeof(md), sig, &sig_len, sk));
+
+    //std::cout << sig_len << ' ' << to_hex(sig, sig_len) << std::endl;
+
+    uint16_t c = sig_len;
+    stream.write((char*)&c, sizeof(c));
+    stream.write((char*)sig, sig_len);
+}
+
+void valid_sig(std::ifstream &stream, unsigned char *md, RSA *pk) {
+    uint16_t c;
+
+    unsigned char *sig = NULL;
+    unsigned int sig_len;
+    sig = (unsigned char*)malloc(RSA_size(pk));
+    assert (sig!=NULL);
+
+    stream.read((char*)&c, sizeof(c));
+    sig_len = c;
+    stream.read((char*)sig, sig_len);
+
+    //std::cout << c << ' ' << to_hex(sig, sig_len) << std::endl;
+
+    int r = RSA_verify(NID_sha256, md, sizeof(md), sig, sig_len, pk);
+
+    if (r!=1) {
+        std::cerr << "RSA Signature doens't match!" << std::endl;
+        exit(1);
+    }
 }

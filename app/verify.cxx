@@ -44,6 +44,38 @@ fire::optional<std::string> file_path = fire::arg({"File to check", "-f", "--fil
         exit(0);
     }
 
+    std::ifstream in_file(file_path.value(), std::fstream::binary);
+
+    std::string file_str; //subject to change, inefficient
+    unsigned char md[SHA256_DIGEST_LENGTH];
+
+    in_file.seekg(0, std::ios::end);   
+    file_str.reserve(in_file.tellg());
+    in_file.seekg(0, std::ios::beg);
+
+    file_str.assign((std::istreambuf_iterator<char>(in_file)),
+                     std::istreambuf_iterator<char>());
+    
+    in_file.close();
+
+    std::optional<std::string> hashed;
+
+    generate_hash(file_str, md);
+
+    assert ((hashed=generate_hash(file_str, md)).has_value());
+
+    //std::cout << hashed.value() << std::endl;
+
+    std::ifstream sig_file(file_path.value()+".sig", std::fstream::binary);
+
+    assert (sig_file.good());
+
+    valid_sig(sig_file, md, rsa);
+
+    sig_file.close();
+
+    std::cout << "Signature matches!" << std::endl;
+
     RSA_free(rsa);
 
     return 0;
