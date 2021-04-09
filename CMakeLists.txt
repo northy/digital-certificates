@@ -6,6 +6,7 @@ set (LIBRESSL_INCLUDE_DIR "/usr/lib/libressl")
 
 add_library(sources
   src/crypto.cpp
+  src/file.cpp
 )
 include_directories(include)
 
@@ -19,3 +20,18 @@ target_link_libraries(Generate
   fire-hpp::fire-hpp
   LibreSSL::Crypto
 )
+
+add_executable(Sign app/sign.cxx)
+target_link_libraries(Sign
+  sources
+  fire-hpp::fire-hpp
+  LibreSSL::Crypto
+)
+
+add_executable(Verify app/verify.cxx)
+target_link_libraries(Verify
+  sources
+  fire-hpp::fire-hpp
+  LibreSSL::Crypto
+)
+
