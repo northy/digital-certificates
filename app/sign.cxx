@@ -10,7 +10,7 @@
 #include <config.hpp>
 
 int fired_main(
-std::string private_key_path = fire::arg({"Private key path", "-s", "--secret"}),
+std::string private_key_path = fire::arg({"Secret key path", "-s", "--secret"}),
 std::string file_path = fire::arg({"File to sign", "-f", "--file"})
 ) {
     std::ifstream private_key_file(private_key_path, std::fstream::binary);
