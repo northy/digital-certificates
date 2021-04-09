@@ -73,4 +73,4 @@ fire::optional<std::string> associated_cert_key = fire::arg({"Associated certifi
     return 0;
 }
 
-FIRE(fired_main, "Generate certificates")
+FIRE(fired_main, "Sign files")

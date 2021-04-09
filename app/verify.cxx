@@ -81,4 +81,4 @@ fire::optional<std::string> file_path = fire::arg({"File to check", "-f", "--fil
     return 0;
 }
 
-FIRE(fired_main, "Check certificates")
+FIRE(fired_main, "Check certificates and signed files")
