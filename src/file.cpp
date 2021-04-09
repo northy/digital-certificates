@@ -58,26 +58,34 @@ RSA* read_sk(std::istream &stream) {
     //std::cout << BN_num_bits(sk) << std::endl;
 
     RSA *rsa = RSA_new();
-    std::cout << RSA_set0_key(rsa, n, pk, sk) << std::endl;
+    assert (RSA_set0_key(rsa, n, pk, sk));
 
     return rsa;
 }
 
-void write_cert(std::ofstream &stream, std::string name, std::string email, RSA *sk) {
+void write_cert(std::ofstream &stream, std::string name, std::string email, RSA *sk, RSA *pk) {
     std::stringstream sstream;
 
-    stream << name << '\0';
-    stream << email << '\0';
+    uint16_t c;
+
+    c = name.size();
+    stream.write((char*)&c, sizeof(c));
+    stream.write(name.c_str(), c);
+
+    c = email.size();
+    stream.write((char*)&c, sizeof(c));
+    stream.write(email.c_str(), c);
+
     sstream << name << email;
 
     const BIGNUM *n, *d;
-    RSA_get0_key(sk, &n, &d, NULL);
+    RSA_get0_key(pk, &n, &d, NULL);
 
     unsigned char bn_hex[RSA_KEYSIZE/4];
     
     //output N
     BN_bn2bin(n, bn_hex);
-    uint16_t c = ceil((double)BN_num_bits(n)/8);
+    c = ceil((double)BN_num_bits(n)/8);
     stream.write((char*)&c, sizeof(c));
     stream.write((char*)bn_hex, c);
     sstream.write((char*)bn_hex, c);
@@ -94,7 +102,7 @@ void write_cert(std::ofstream &stream, std::string name, std::string email, RSA 
 
     assert ((hashed=generate_hash(sstream.str(), md)).has_value());
 
-    std::cout << hashed.value() << std::endl;
+    //std::cout << hashed.value() << std::endl;
     stream.write((char*)md, SHA256_DIGEST_LENGTH);
 
     unsigned char *sig = NULL;
@@ -106,7 +114,6 @@ void write_cert(std::ofstream &stream, std::string name, std::string email, RSA 
 
     //std::cout << to_hex(sig, sig_len) << std::endl;
     c = sig_len;
-    //std::cout << c << std::endl;
     stream.write((char*)&c, sizeof(c));
     stream.write((char*)sig, sig_len);
     
@@ -117,19 +124,24 @@ RSA *valid_cert(std::ifstream &stream, std::string &name, std::string &email, RS
     std::stringstream sstream;
     RSA *rsa = RSA_new();
 
-    stream >> name;
-    stream >> email;
+    uint16_t c;
+
+    stream.read((char*)&c, sizeof(c));
+    name.resize(c);
+    stream.read(&name[0], c);
+
+    stream.read((char*)&c, sizeof(c));
+    email.resize(c);
+    stream.read(&email[0], c);
+
     sstream << name << email;
 
-    BIGNUM *n, *d;
+    BIGNUM *n = NULL, *d = NULL;
 
     unsigned char bn_hex[RSA_KEYSIZE/4];
-    
-    uint16_t c;
 
     //read N
     stream.read((char*)&c, sizeof(c));
-    std::cout << c << std::endl; //TODO
     stream.read((char*)bn_hex, c);
     sstream.write((char*)bn_hex, c);
     n = BN_bin2bn((const unsigned char*)bn_hex, c, n);
@@ -142,31 +154,43 @@ RSA *valid_cert(std::ifstream &stream, std::string &name, std::string &email, RS
 
     RSA_set0_key(rsa, n, d, NULL);
 
-
-    unsigned char md[SHA256_DIGEST_LENGTH];
+    unsigned char md[SHA256_DIGEST_LENGTH], md_read[SHA256_DIGEST_LENGTH];
     std::optional<std::string> hashed;
 
     assert ((hashed=generate_hash(sstream.str(), md)).has_value());
 
-    std::cout << hashed.value() << std::endl;
+    stream.read((char*)md_read, SHA256_DIGEST_LENGTH);
 
-    return rsa; //todo
+    for (int i=0; i<SHA256_DIGEST_LENGTH; ++i) {
+        if (md[i]!=md_read[i]) {
+            std::cerr << "Invalid certificate hash" << std::endl;
+            exit(1);
+        }
+    }
 
-    /*std::cout << hashed.value() << std::endl;
-    stream.write((char*)md, SHA256_DIGEST_LENGTH);
+    //std::cout << hashed.value() << std::endl;
+
+    if (pk==NULL) return rsa;
 
     unsigned char *sig = NULL;
     unsigned int sig_len;
-    sig = (unsigned char*)malloc(RSA_size(sk));
+    sig = (unsigned char*)malloc(RSA_size(rsa));
     assert (sig!=NULL);
 
-    assert (RSA_sign(NID_sha256, md, sizeof(md), sig, &sig_len, sk));
+    stream.read((char*)&c, sizeof(c));
+    sig_len = c;
+    stream.read((char*)sig, sig_len);
+    
+    int r = RSA_verify(NID_sha256, md_read, SHA256_DIGEST_LENGTH, sig, sig_len, pk);
+
+    if (r!=1) {
+        std::cerr << "RSA Signature doens't match!" << std::endl;
+        exit(1);
+    }
 
     //std::cout << to_hex(sig, sig_len) << std::endl;
-    c = sig_len;
-    //std::cout << c << std::endl;
-    stream.write((char*)&c, sizeof(c));
-    stream.write((char*)sig, sig_len);
     
-    free(sig);*/
+    free(sig);
+
+    return rsa;
 }

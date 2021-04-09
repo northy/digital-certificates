@@ -17,6 +17,6 @@ void write_sk(std::ofstream &stream, RSA *rsa);
 
 RSA* read_sk(std::istream &stream);
 
-void write_cert(std::ofstream &stream, std::string name, std::string email, RSA *sk);
+void write_cert(std::ofstream &stream, std::string name, std::string email, RSA *sk, RSA *pk);
 
 RSA *valid_cert(std::ifstream &stream, std::string &name, std::string &email, RSA *pk);
