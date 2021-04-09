@@ -1,3 +1,3 @@
 [submodule "libs/fire-hpp"]
 	path = libs/fire-hpp
-	url = git@github.com:kongaskristjan/fire-hpp.git
+	url = github.com/kongaskristjan/fire-hpp.git
