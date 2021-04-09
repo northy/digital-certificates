@@ -70,12 +70,13 @@ Run arguments are:
 |----------|---------------------------------|--------------------|
 | -s       | Self signed certificate?        | No                 |
 | -o       | Output file path                | Yes                |
-| -k       | Associated certificate key file | If not self signed |
+| -k       | Associated certificate key file | If not self-signed |
 
 Example:
 
 ```sh
 ./Generate -o out.cert -s
+./Generate -o out.cert -k signer.cert.sk
 ```
 
 #### Sign
@@ -94,7 +95,7 @@ Run arguments are:
 Example:
 
 ```sh
-./Generate -s out.cert.sk -o out.cert
+./Sign -s out.cert.sk -f file.ext
 ```
 
 #### Verify
@@ -112,6 +113,11 @@ Run arguments are:
 Note: There must exist a .sig file for the file provided in -f.
 
 Example:
+
+```sh
+./Verify -c out.cert -f file.ext
+./Verify -c out.cert -s signer.cert
+```
 
 ### 4.3 Files
 
